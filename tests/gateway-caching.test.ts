@@ -50,7 +50,7 @@ import {
   formatTableHeader,
   formatTurnRow,
   type Pricing,
-} from "../src/cache-stats"
+} from "../src/stats"
 
 import { runConversation, type ConversationStrategy } from "../src/conversation"
 import { fetchPricing } from "../src/pricing"

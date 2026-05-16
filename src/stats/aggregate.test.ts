@@ -1,14 +1,9 @@
 import { describe, expect, test } from "bun:test"
 import type { LanguageModelUsage } from "ai"
-import {
-  aggregateRows,
-  formatCacheTable,
-  rowFromUsage,
-  summarizeTurns,
-  type CacheRow,
-  type StepRow,
-  type TurnRecord,
-} from "./cache-stats"
+
+import { aggregateRows, rowFromUsage, summarizeTurns } from "./aggregate"
+import type { CacheRow, TurnRecord } from "./types"
+
 
 function mockUsage(
   partial: Partial<{
@@ -32,19 +27,20 @@ function mockUsage(
   } as unknown as LanguageModelUsage
 }
 
+
 describe("rowFromUsage", () => {
   test("extracts every cache field from a populated usage", () => {
-    expect(
-      rowFromUsage(
-        mockUsage({
-          inputTokens: 1000,
-          noCacheTokens: 200,
-          cacheReadTokens: 700,
-          cacheWriteTokens: 100,
-          outputTokens: 50,
-        }),
-      ),
-    ).toEqual({
+    const row = rowFromUsage(
+      mockUsage({
+        inputTokens: 1000,
+        noCacheTokens: 200,
+        cacheReadTokens: 700,
+        cacheWriteTokens: 100,
+        outputTokens: 50,
+      }),
+    )
+
+    expect(row).toEqual({
       inputTokens: 1000,
       noCacheTokens: 200,
       cacheReadTokens: 700,
@@ -54,6 +50,7 @@ describe("rowFromUsage", () => {
       seconds: 0,
     })
   })
+
 
   test("coerces undefined fields to 0", () => {
     expect(rowFromUsage(mockUsage({}))).toEqual({
@@ -67,13 +64,23 @@ describe("rowFromUsage", () => {
     })
   })
 
+
   test("hitRate is 0 when inputTokens is 0 (defensive)", () => {
-    expect(
-      rowFromUsage(mockUsage({ inputTokens: 0, cacheReadTokens: 50 }))
-        .hitRate,
-    ).toBe(0)
+    const row = rowFromUsage(
+      mockUsage({ inputTokens: 0, cacheReadTokens: 50 }),
+    )
+
+    expect(row.hitRate).toBe(0)
+  })
+
+
+  test("records the supplied wall-clock seconds", () => {
+    const row = rowFromUsage(mockUsage({ inputTokens: 100 }), 2.5)
+
+    expect(row.seconds).toBe(2.5)
   })
 })
+
 
 describe("aggregateRows", () => {
   test("sums fields and recomputes hitRate from sums (not avg of ratios)", () => {
@@ -97,14 +104,17 @@ describe("aggregateRows", () => {
         seconds: 0,
       },
     ]
+
     const agg = aggregateRows(rows)
+
     expect(agg.inputTokens).toBe(2100)
     expect(agg.cacheReadTokens).toBe(800)
     expect(agg.cacheWriteTokens).toBe(1000)
     expect(agg.hitRate).toBe(800 / 2100)
   })
 
-  test("empty input returns zero row", () => {
+
+  test("empty input returns an all-zeroes row", () => {
     expect(aggregateRows([])).toEqual({
       inputTokens: 0,
       noCacheTokens: 0,
@@ -115,7 +125,34 @@ describe("aggregateRows", () => {
       seconds: 0,
     })
   })
+
+
+  test("sums seconds across rows", () => {
+    const rows: CacheRow[] = [
+      {
+        inputTokens: 0,
+        noCacheTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        outputTokens: 0,
+        hitRate: 0,
+        seconds: 1.5,
+      },
+      {
+        inputTokens: 0,
+        noCacheTokens: 0,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        outputTokens: 0,
+        hitRate: 0,
+        seconds: 2.25,
+      },
+    ]
+
+    expect(aggregateRows(rows).seconds).toBe(3.75)
+  })
 })
+
 
 describe("summarizeTurns", () => {
   test("rolls turn totals up into a grand total", () => {
@@ -130,7 +167,7 @@ describe("summarizeTurns", () => {
           cacheWriteTokens: 800,
           outputTokens: 50,
           hitRate: 0,
-        seconds: 0,
+          seconds: 0,
         },
       },
       {
@@ -143,60 +180,15 @@ describe("summarizeTurns", () => {
           cacheWriteTokens: 200,
           outputTokens: 60,
           hitRate: 800 / 1100,
-        seconds: 0,
+          seconds: 0,
         },
       },
     ]
+
     const conv = summarizeTurns(turns)
+
     expect(conv.total.inputTokens).toBe(2100)
     expect(conv.total.cacheReadTokens).toBe(800)
     expect(conv.turns).toBe(turns)
-  })
-})
-
-describe("formatCacheTable", () => {
-  test("prints header, per-step rows, per-turn aggregate, and final TOT", () => {
-    const steps: StepRow[] = [
-      {
-        turn: 1,
-        step: 1,
-        inputTokens: 1000,
-        noCacheTokens: 1000,
-        cacheReadTokens: 0,
-        cacheWriteTokens: 800,
-        outputTokens: 50,
-        hitRate: 0,
-        seconds: 0,
-        appliedEdits: [],
-        breakpoints: 1,
-      },
-      {
-        turn: 1,
-        step: 2,
-        inputTokens: 1100,
-        noCacheTokens: 100,
-        cacheReadTokens: 1000,
-        cacheWriteTokens: 0,
-        outputTokens: 30,
-        hitRate: 1000 / 1100,
-        seconds: 0,
-        appliedEdits: ["cleared 2 tool uses; freed 800 tokens"],
-        breakpoints: 1,
-      },
-    ]
-    const turn1: TurnRecord = {
-      turn: 1,
-      steps,
-      total: aggregateRows(steps),
-    }
-    const out = formatCacheTable("strat-X", summarizeTurns([turn1]))
-    expect(out).toContain("=== strat-X ===")
-    expect(out).toContain("turn")
-    expect(out).toContain("hit%")
-    expect(out.split("\n").filter((l) => l.startsWith("    1"))).toHaveLength(2)
-    expect(out).toContain("T1")
-    expect(out).toContain("TOT")
-    // Edit summaries indent under their parent step row.
-    expect(out).toContain("↪ cleared 2 tool uses; freed 800 tokens")
   })
 })

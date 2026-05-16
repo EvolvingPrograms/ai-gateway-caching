@@ -10,7 +10,9 @@
  * that hurt cache-write anchoring).
  */
 
+import type { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 import type { ModelMessage } from "ai"
+
 
 // ---------------------------------------------------------------------------
 // Breakpoint counter
@@ -32,21 +34,39 @@ export function countBreakpoints(
   systemHasEphemeral = false,
 ): number {
   let count = systemHasEphemeral ? 1 : 0
+
   for (const m of messages) {
-    const msgAnthropic = m.providerOptions?.anthropic as
-      | { cacheControl?: unknown }
-      | undefined
-    if (msgAnthropic?.cacheControl) count++
+    if (anthropicFrom(m.providerOptions)?.cacheControl) count++
+
     if (Array.isArray(m.content)) {
       for (const part of m.content) {
-        const partAnthropic = (
-          part as { providerOptions?: { anthropic?: { cacheControl?: unknown } } }
-        ).providerOptions?.anthropic
-        if (partAnthropic?.cacheControl) count++
+        // Approval parts have no `providerOptions` field in the SDK
+        // types — skip them.
+        if (
+          part.type === "tool-approval-request" ||
+          part.type === "tool-approval-response"
+        ) {
+          continue
+        }
+        if (anthropicFrom(part.providerOptions)?.cacheControl) count++
       }
     }
   }
+
   return count
+}
+
+
+/**
+ * Read the Anthropic provider-options block out of any `providerOptions`
+ * record, typed as `AnthropicLanguageModelOptions`. The AI SDK stores
+ * `providerOptions` as `Record<string, JSONObject>`, so we coerce on
+ * the way out rather than letting the call sites scatter `as` casts.
+ */
+function anthropicFrom(
+  options: { anthropic?: unknown } | undefined,
+): AnthropicLanguageModelOptions | undefined {
+  return options?.anthropic as AnthropicLanguageModelOptions | undefined
 }
 
 // ---------------------------------------------------------------------------

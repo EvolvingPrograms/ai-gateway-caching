@@ -28,7 +28,7 @@ import {
   type ConversationCacheStats,
   type StepRow,
   type TurnRecord,
-} from "./cache-stats"
+} from "./stats"
 
 export interface ConversationStrategy<TOOLS extends ToolSet> {
   label: string

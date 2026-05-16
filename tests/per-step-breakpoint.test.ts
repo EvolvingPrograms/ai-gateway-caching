@@ -34,7 +34,7 @@ import {
   summarizeTurns,
   type StepRow,
   type TurnRecord,
-} from "../src/cache-stats"
+} from "../src/stats"
 import { fetchPricing } from "../src/pricing"
 import { verboseTools, type VerboseTools } from "../src/tools"
 

@@ -9,7 +9,7 @@
  */
 
 import { gateway } from "@ai-sdk/gateway"
-import type { Pricing } from "./cache-stats"
+import type { Pricing } from "./stats"
 
 /**
  * Look up a model's per-token USD rates from the gateway's model
