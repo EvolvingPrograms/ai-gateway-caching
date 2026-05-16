@@ -8,7 +8,7 @@ import {
   type CacheRow,
   type StepRow,
   type TurnRecord,
-} from "../src/cache-stats"
+} from "./cache-stats"
 
 function mockUsage(
   partial: Partial<{
@@ -51,6 +51,7 @@ describe("rowFromUsage", () => {
       cacheWriteTokens: 100,
       outputTokens: 50,
       hitRate: 0.7,
+      seconds: 0,
     })
   })
 
@@ -62,6 +63,7 @@ describe("rowFromUsage", () => {
       cacheWriteTokens: 0,
       outputTokens: 0,
       hitRate: 0,
+      seconds: 0,
     })
   })
 
@@ -83,6 +85,7 @@ describe("aggregateRows", () => {
         cacheWriteTokens: 800,
         outputTokens: 50,
         hitRate: 0,
+        seconds: 0,
       },
       {
         inputTokens: 1100,
@@ -91,6 +94,7 @@ describe("aggregateRows", () => {
         cacheWriteTokens: 200,
         outputTokens: 60,
         hitRate: 800 / 1100,
+        seconds: 0,
       },
     ]
     const agg = aggregateRows(rows)
@@ -108,6 +112,7 @@ describe("aggregateRows", () => {
       cacheWriteTokens: 0,
       outputTokens: 0,
       hitRate: 0,
+      seconds: 0,
     })
   })
 })
@@ -125,6 +130,7 @@ describe("summarizeTurns", () => {
           cacheWriteTokens: 800,
           outputTokens: 50,
           hitRate: 0,
+        seconds: 0,
         },
       },
       {
@@ -137,6 +143,7 @@ describe("summarizeTurns", () => {
           cacheWriteTokens: 200,
           outputTokens: 60,
           hitRate: 800 / 1100,
+        seconds: 0,
         },
       },
     ]
@@ -159,6 +166,7 @@ describe("formatCacheTable", () => {
         cacheWriteTokens: 800,
         outputTokens: 50,
         hitRate: 0,
+        seconds: 0,
         appliedEdits: [],
         breakpoints: 1,
       },
@@ -171,6 +179,7 @@ describe("formatCacheTable", () => {
         cacheWriteTokens: 0,
         outputTokens: 30,
         hitRate: 1000 / 1100,
+        seconds: 0,
         appliedEdits: ["cleared 2 tool uses; freed 800 tokens"],
         breakpoints: 1,
       },

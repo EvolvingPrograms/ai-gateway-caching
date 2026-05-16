@@ -20,6 +20,7 @@ import type {
   ToolLoopAgent,
   ToolSet,
 } from "ai"
+
 import {
   aggregateRows,
   rowFromUsage,
@@ -70,22 +71,27 @@ export async function runConversation<TOOLS extends ToolSet>(args: {
   for (let i = 0; i < userTurns.length; i++) {
     const turn = i + 1
     const userText = userTurns[i]!
+    const steps: StepRow[] = []
+
     const transformed = strategy.transform
       ? strategy.transform(history)
       : [...history]
 
-    const steps: StepRow[] = []
-
+    let stepStartMs = Date.now()
     const result = await strategy.agent.generate({
       messages: [...transformed, { role: "user", content: userText }],
       onStepFinish: (event: StepResult<TOOLS>) => {
+        const now = Date.now()
+        const seconds = (now - stepStartMs) / 1000
+        stepStartMs = now
         const step: StepRow = {
           turn,
           step: event.stepNumber + 1,
-          ...rowFromUsage(event.usage),
+          ...rowFromUsage(event.usage, seconds),
           breakpoints: strategy.lastBreakpointCount?.() ?? 0,
           appliedEdits: extractAppliedEdits(event.providerMetadata),
         }
+
         steps.push(step)
         onStep?.(step)
       },
@@ -96,6 +102,7 @@ export async function runConversation<TOOLS extends ToolSet>(args: {
       steps,
       total: aggregateRows(steps),
     }
+
     turns.push(turnRecord)
     onTurn?.(turnRecord)
 
@@ -132,7 +139,10 @@ function extractAppliedEdits(
         }
       }
     | undefined)?.anthropic?.contextManagement
-  if (!cm?.appliedEdits || cm.appliedEdits.length === 0) return []
+
+  if (!cm?.appliedEdits || cm.appliedEdits.length === 0) {
+    return []
+  }
 
   return cm.appliedEdits.map((raw): string => {
     const e = raw as {
@@ -141,13 +151,17 @@ function extractAppliedEdits(
       clearedThinkingTurns?: number
       clearedInputTokens?: number
     }
+
     switch (e.type) {
       case "clear_tool_uses_20250919":
         return `cleared ${e.clearedToolUses ?? "?"} tool use(s); freed ${e.clearedInputTokens ?? "?"} tokens`
+
       case "clear_thinking_20251015":
         return `cleared ${e.clearedThinkingTurns ?? "?"} thinking turn(s); freed ${e.clearedInputTokens ?? "?"} tokens`
+
       case "compact_20260112":
         return "compaction applied"
+
       default:
         return `edit applied: ${e.type ?? "<unknown>"}`
     }

@@ -30,6 +30,8 @@ export interface CacheRow {
   cacheWriteTokens: number
   outputTokens: number
   hitRate: number
+  /** Wall-clock seconds for the call(s) this row represents. */
+  seconds: number
 }
 
 export interface StepRow extends CacheRow {
@@ -94,7 +96,10 @@ export function rowCost(row: CacheRow, pricing: Pricing): number {
  * Build a `CacheRow` from an AI SDK usage object. All fields are
  * coerced to numbers (the SDK exposes them as `number | undefined`).
  */
-export function rowFromUsage(usage: LanguageModelUsage): CacheRow {
+export function rowFromUsage(
+  usage: LanguageModelUsage,
+  seconds = 0,
+): CacheRow {
   const inputTokens = usage.inputTokens ?? 0
   const noCacheTokens = usage.inputTokenDetails.noCacheTokens ?? 0
   const cacheReadTokens = usage.inputTokenDetails.cacheReadTokens ?? 0
@@ -107,6 +112,7 @@ export function rowFromUsage(usage: LanguageModelUsage): CacheRow {
     cacheWriteTokens,
     outputTokens,
     hitRate: inputTokens > 0 ? cacheReadTokens / inputTokens : 0,
+    seconds,
   }
 }
 
@@ -119,6 +125,7 @@ export function aggregateRows(rows: readonly CacheRow[]): CacheRow {
     cacheWriteTokens: 0,
     outputTokens: 0,
     hitRate: 0,
+    seconds: 0,
   }
   for (const r of rows) {
     acc.inputTokens += r.inputTokens
@@ -126,6 +133,7 @@ export function aggregateRows(rows: readonly CacheRow[]): CacheRow {
     acc.cacheReadTokens += r.cacheReadTokens
     acc.cacheWriteTokens += r.cacheWriteTokens
     acc.outputTokens += r.outputTokens
+    acc.seconds += r.seconds
   }
   acc.hitRate = acc.inputTokens > 0 ? acc.cacheReadTokens / acc.inputTokens : 0
   return acc
@@ -149,6 +157,7 @@ const BASE_HEADER = [
   "write",
   "output",
   "hit%",
+  "sec",
 ] as const
 const HEADER_WITH_COST = [...BASE_HEADER, "cost$"] as const
 type HeaderCol = (typeof HEADER_WITH_COST)[number]
@@ -163,6 +172,7 @@ const WIDTHS: Record<HeaderCol, number> = {
   write: 9,
   output: 8,
   "hit%": 6,
+  sec: 6,
   cost$: 10,
 }
 
@@ -189,6 +199,7 @@ function cellsForRow(
     write: String(rowData.cacheWriteTokens),
     output: String(rowData.outputTokens),
     "hit%": pct(rowData.hitRate),
+    sec: rowData.seconds > 0 ? rowData.seconds.toFixed(1) : "-",
     cost$: pricing ? dollars(rowCost(rowData, pricing)) : "",
   }
   return cells
@@ -226,7 +237,7 @@ export function formatStepRow(step: StepRow, pricing?: Pricing): string {
         ...step,
         turn: String(step.turn),
         step: String(step.step),
-        bp: String(step.breakpoints),
+        bp: step.breakpoints === 0 ? "-" : String(step.breakpoints),
       },
       pricing,
     ),

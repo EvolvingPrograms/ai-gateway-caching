@@ -18,16 +18,19 @@ import type { Pricing } from "./cache-stats"
  */
 export async function fetchPricing(modelId: string): Promise<Pricing> {
   const { models } = await gateway.getAvailableModels()
+
   const entry = models.find((m) => m.id === modelId)
   if (!entry) {
     throw new Error(
       `model not found in gateway catalogue: ${modelId}`,
     )
   }
+
   const p = entry.pricing
   if (!p) {
     throw new Error(`model ${modelId} has no published pricing`)
   }
+  
   return {
     inputRate: Number(p.input),
     outputRate: Number(p.output),

@@ -147,6 +147,7 @@ async function runOneTurn(
       cacheWriteTokens: steps.reduce((a, s) => a + s.cacheWriteTokens, 0),
       outputTokens: steps.reduce((a, s) => a + s.outputTokens, 0),
       hitRate: 0,
+        seconds: 0,
     },
   }
   turn.total.hitRate =

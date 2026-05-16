@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { ModelMessage } from "ai"
-import { pinTailBreakpoint, withEphemeralCacheControl } from "../src/breakpoints"
+import { pinTailBreakpoint, withEphemeralCacheControl } from "./breakpoints"
 
 describe("withEphemeralCacheControl", () => {
   test("system message: cache control applied at message level", () => {

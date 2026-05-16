@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { ModelMessage } from "ai"
-import { dropOldestToolUses } from "../src/trim"
+import { dropOldestToolUses } from "./trim"
 
 function userMsg(text: string): ModelMessage {
   return { role: "user", content: text }

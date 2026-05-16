@@ -28,6 +28,7 @@
  */
 
 import { describe, expect, test } from "bun:test"
+import { type AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 import {
   stepCountIs,
   ToolLoopAgent,
@@ -35,11 +36,14 @@ import {
   type SystemModelMessage,
   type ToolSet,
 } from "ai"
+
+
 import {
   makeCountingPrepareStep,
   pinTailBreakpoint,
   withEphemeralCacheControl,
 } from "../src/breakpoints"
+
 import {
   formatGrandTotalRow,
   formatStepRow,
@@ -47,16 +51,17 @@ import {
   formatTurnRow,
   type Pricing,
 } from "../src/cache-stats"
+
 import { runConversation, type ConversationStrategy } from "../src/conversation"
 import { fetchPricing } from "../src/pricing"
+import { dropOldestToolUses } from "../src/trim"
+
 import {
   conciseTools,
   testTools,
   type ConciseTools,
   type TestTools,
 } from "../src/tools"
-import { dropOldestToolUses } from "../src/trim"
-import { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 
 const MODEL = "anthropic/claude-opus-4.7"
 
@@ -82,15 +87,31 @@ function freshSystemPrompt(): string {
   ].join("\n")
 }
 
-// 5 turns × up to 12 steps each. Tool results are chunky (~1.5–3k
-// tokens per call) so context grows quickly — exactly the shape
-// where prompt-cache + context-editing decisions start to matter.
+// Long, research-heavy conversation: each turn asks for several
+// fetches, so input grows past the 30k `clear_tool_uses` trigger
+// multiple times across the run and we can observe repeated
+// context edits.
 const USER_TURNS = [
-  "Research 'cache invalidation patterns' — search the KB, fetch the top 3 hits, and give me a 2-sentence synthesis pulling from all three.",
-  "Now do the same workflow for 'rate limiting': search, fetch the top 3, synthesize.",
-  "And once more for 'distributed locks': search, fetch the top 3, synthesize.",
-  "List the 5 most recent knowledge-base changes, then pick the one that's most relevant to the topics we've covered and fetch its full document.",
-  "Recap the four topics we explored today, in one sentence each, citing one source per topic.",
+  "Research 'cache invalidation patterns' — search the KB, fetch the top 5 hits, and give me a 2-sentence synthesis pulling from all five.",
+  "Now do the same workflow for 'rate limiting': search, fetch the top 5, synthesize.",
+  "And once more for 'distributed locks': search, fetch the top 5, synthesize.",
+  "Same workflow for 'consensus algorithms': search, fetch the top 5, synthesize.",
+  "Same workflow for 'event sourcing': search, fetch the top 5, synthesize.",
+  "Same workflow for 'circuit breakers': search, fetch the top 5, synthesize.",
+  "Same workflow for 'message queues': search, fetch the top 5, synthesize.",
+  "Same workflow for 'service mesh': search, fetch the top 5, synthesize.",
+  "Same workflow for 'sharding strategies': search, fetch the top 5, synthesize.",
+  "Same workflow for 'leader election': search, fetch the top 5, synthesize.",
+  "Same workflow for 'eventual consistency': search, fetch the top 5, synthesize.",
+  "Same workflow for 'CRDTs': search, fetch the top 5, synthesize.",
+  "Same workflow for 'gossip protocols': search, fetch the top 5, synthesize.",
+  "Same workflow for 'vector clocks': search, fetch the top 5, synthesize.",
+  "Same workflow for 'bloom filters': search, fetch the top 5, synthesize.",
+  "Same workflow for 'log-structured storage': search, fetch the top 5, synthesize.",
+  "Same workflow for 'write-ahead logs': search, fetch the top 5, synthesize.",
+  "Same workflow for 'two-phase commit': search, fetch the top 5, synthesize.",
+  "List the 8 most recent knowledge-base changes, then pick the two most relevant to the topics we've covered and fetch their full documents.",
+  "Recap every topic we explored today, in one sentence each, citing one source per topic.",
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -128,29 +149,44 @@ const REASONING_OPTIONS: Pick<
   effort: "medium",
 }
 
+/**
+ * Sized for Claude Opus 4.7's 1M context window. Every context-edit
+ * invalidates the prompt cache from the edit point onward — so we
+ * push the triggers WAY up to delay invalidation, and make each clear
+ * BIG so the cache write that follows amortizes over many subsequent
+ * cache reads before the next invalidation.
+ *
+ *   - clear_tool_uses: fires at 600k input, clears at least 120k
+ *     (20% of the working set). Keeps 20 most recent tool uses for
+ *     conversational coherence.
+ *   - clear_thinking: keep 20 turns so cache stays valid as long
+ *     as possible (clearing thinking blocks invalidates cache too).
+ *   - compact: only as a last resort at 800k input — way past where
+ *     normal usage should ever push us.
+ */
 const CONTEXT_MANAGEMENT: AnthropicLanguageModelOptions["contextManagement"] = {
-  // Order matters: Anthropic requires `clear_thinking_20251015` to be
-  // the FIRST strategy in `context_management.edits` when present.
-  // (The gateway / API returns a 400 otherwise.)
   edits: [
     {
       type: "clear_thinking_20251015",
-      keep: { type: "thinking_turns", value: 2 },
+      keep: { type: "thinking_turns", value: 20 },
     },
     {
       type: "clear_tool_uses_20250919",
-      trigger: { type: "input_tokens", value: 30_000 },
-      keep: { type: "tool_uses", value: 5 },
-      clearAtLeast: { type: "input_tokens", value: 5_000 },
+      trigger: { type: "input_tokens", value: 600_000 },
+      keep: { type: "tool_uses", value: 20 },
+      clearAtLeast: { type: "input_tokens", value: 120_000 },
       clearToolInputs: false,
     },
-    {
-      type: "compact_20260112",
-      trigger: { type: "input_tokens", value: 80_000 },
-      instructions:
-        "Summarize the conversation concisely, preserving the topics researched, key facts cited, and any tool-result URLs the user might reference later.",
-      pauseAfterCompaction: false,
-    },
+    // Compaction disabled for now — it rewrites the entire history,
+    // which is the maximum-blast-radius cache invalidation. Revisit
+    // once tool-use clearing alone proves insufficient.
+    // {
+    //   type: "compact_20260112",
+    //   trigger: { type: "input_tokens", value: 800_000 },
+    //   instructions:
+    //     "Summarize the conversation concisely, preserving the topics researched, key facts cited, and any tool-result URLs the user might reference later.",
+    //   pauseAfterCompaction: false,
+    // },
   ],
 }
 
@@ -353,6 +389,68 @@ function stratEightVerboseAllTechniques(
       history.map((m, i) => {
         const fromEnd = history.length - 1 - i
         return fromEnd < 3 ? withEphemeralCacheControl(m) : m
+      }),
+    afterTurn: (history, turn) => {
+      let newlyCleared = 0
+      for (const step of turn.steps) {
+        for (const edit of step.appliedEdits) {
+          const m = edit.match(/cleared (\d+) tool use/)
+          if (m) newlyCleared += Number(m[1])
+        }
+      }
+      if (newlyCleared === 0) return history
+      return dropOldestToolUses(history, newlyCleared)
+    },
+  }
+}
+
+/**
+ * Strategy 9 — like 8, but WE own every cache_control marker and
+ * deliberately sit at exactly the 4-breakpoint Anthropic max:
+ *   1. system (ephemeral)
+ *   2. + 3. last 2 history messages (transform)
+ *   4. tail of the current step (pinTailBreakpoint)
+ *
+ * Differences vs strategy 8:
+ *   - `gateway: { caching: "auto" }` is REMOVED so the gateway can't
+ *     add a 5th server-side marker that competes with ours and
+ *     forces the API to silently drop one of our 5 markers.
+ *   - transform uses last-2 (not last-3) history msgs so our total
+ *     stays at exactly 4 even with the per-step tail pin.
+ *
+ * Hypothesis: post-edit "write" collapse in strategy 8 is caused by
+ * the tail-pin marker being the one dropped when we exceed the 4-cap.
+ * If true, this strategy should keep healthy per-step writes after
+ * each `clear_tool_uses` edit.
+ */
+function stratNineManualBreakpoints(
+  systemPrompt: string,
+): ConversationStrategy<TestTools> {
+  const counter = makeCountingPrepareStep({
+    inner: pinTailBreakpoint,
+    systemHasEphemeral: true,
+  })
+  return {
+    label:
+      "9. verbose tools + manual 4-bp budget (system + last-2 history + tail-pin) + context mgmt + mirror-trim, NO gateway auto",
+    agent: new ToolLoopAgent({
+      model: MODEL,
+      instructions: ephemeralSystem(systemPrompt),
+      tools: testTools,
+      stopWhen: STOP_WHEN,
+      prepareStep: counter.prepareStep,
+      providerOptions: {
+        anthropic: {
+          ...REASONING_OPTIONS,
+          contextManagement: CONTEXT_MANAGEMENT,
+        } satisfies AnthropicLanguageModelOptions,
+      },
+    }),
+    lastBreakpointCount: counter.lastCount,
+    transform: (history) =>
+      history.map((m, i) => {
+        const fromEnd = history.length - 1 - i
+        return fromEnd < 2 ? withEphemeralCacheControl(m) : m
       }),
     afterTurn: (history, turn) => {
       let newlyCleared = 0
@@ -618,6 +716,31 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
       )
       for (const e of allEdits) console.log(`  ${e}`)
       // The goal of strategy 7 is to land above 90% overall.
+      console.log(
+        `\nOverall hit rate: ${Math.round(result.stats.total.hitRate * 100)}%`,
+      )
+    },
+    { timeout: 600_000 },
+  )
+
+  test.skipIf(!hasGatewayCreds)(
+    "strategy 9: verbose tools + manual 4-bp budget + context mgmt + mirror-trim, NO gateway auto",
+    async () => {
+      const result = await runStrategy(stratNineManualBreakpoints)
+      const turns = result.stats.turns
+      expect(turns[0]!.steps[0]!.cacheReadTokens).toBe(0)
+      for (let i = 1; i < turns.length; i++) {
+        expect(turns[i]!.total.cacheReadTokens).toBeGreaterThan(0)
+      }
+      const allEdits = turns.flatMap((t) =>
+        t.steps.flatMap((s) =>
+          s.appliedEdits.map((e) => `T${t.turn} S${s.step}: ${e}`),
+        ),
+      )
+      console.log(
+        `\nContext edits applied across conversation: ${allEdits.length}`,
+      )
+      for (const e of allEdits) console.log(`  ${e}`)
       console.log(
         `\nOverall hit rate: ${Math.round(result.stats.total.hitRate * 100)}%`,
       )
