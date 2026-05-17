@@ -1,0 +1,68 @@
+# CI for gateway-caching.
+#
+# Two jobs:
+#   - `unit`         — fast, network-free. Runs on every push + PR.
+#                      Type-checks the whole tree and runs the sibling
+#                      tests under src/.
+#   - `integration`  — real AI Gateway + Anthropic Opus 4.7 calls.
+#                      Costs money (~$0.50–$1 per run on the filtered
+#                      strategy set), so it only runs on pushes to
+#                      `main` and via the workflow_dispatch button.
+#                      Skips unless `AI_GATEWAY_API_KEY` is configured
+#                      as a repository secret.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  unit:
+    name: Type check + unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bunx tsc --noEmit
+
+      - name: Unit tests (src/)
+        run: bun run test:unit
+
+  integration:
+    name: Integration tests (real AI Gateway)
+    runs-on: ubuntu-latest
+    needs: unit
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run filtered caching suite (strategies 2, 7, 8)
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          if [ -z "$AI_GATEWAY_API_KEY" ]; then
+            echo "AI_GATEWAY_API_KEY secret not set — skipping integration run."
+            exit 0
+          fi
+          bun test tests/caching/caching.test.ts -t "strategy 2|strategy 7|strategy 8"
