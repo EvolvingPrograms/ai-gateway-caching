@@ -15,6 +15,12 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // Path alias — `@/foo/bar` resolves to `./foo/bar` from the
+    // tsconfig directory (the repo root).
+    "paths": {
+      "@/*": ["./*"]
+    },
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,

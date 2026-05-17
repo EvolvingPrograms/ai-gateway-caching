@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "bun --env-file=.env.local test tests/gateway-caching.test.ts -t \"strategy 2|strategy 7|strategy 8\""
+    "test": "bun --env-file=.env.local test tests/caching/caching.test.ts -t \"strategy 2|strategy 7|strategy 8\"",
+    "test:unit": "bun test src/"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",
