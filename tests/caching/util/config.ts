@@ -38,9 +38,9 @@ export const CONTEXT_MANAGEMENT: AnthropicLanguageModelOptions["contextManagemen
     },
     {
       type: "clear_tool_uses_20250919",
-      trigger: { type: "input_tokens", value: 600_000 },
+      trigger: { type: "input_tokens", value: 180_000 },
       keep: { type: "tool_uses", value: 20 },
-      clearAtLeast: { type: "input_tokens", value: 120_000 },
+      clearAtLeast: { type: "input_tokens", value: 60_000 },
       clearToolInputs: false,
     },
     // Compaction disabled for now — it rewrites the entire history,

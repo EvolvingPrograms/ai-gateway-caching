@@ -61,7 +61,11 @@ Optional but compounding:
    local outgoing prefix → next request matches the cached state)
    is identical across customers and fiddly to get right at the
    caller. Moving it inside `caching: "auto"` removes a foot-gun
-   and keeps long conversations on a clean cached prefix.
+   and keeps long conversations on a clean cached prefix. Sensible
+   defaults are big and rare — currently we run with `trigger:
+   180k` and `clearAtLeast: 60k` on Opus 4.7's 1M window, so a
+   typical 20-turn conversation triggers at most a couple of edits
+   and each one frees enough room to amortize the cache write.
 
 Secondary observation, not a gateway change: **concise tool design
 is the dominant cost lever once the cache is anchored.** Strategy 7
