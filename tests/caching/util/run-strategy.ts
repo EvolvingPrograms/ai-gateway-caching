@@ -11,15 +11,15 @@
 
 import type { ToolSet } from "ai"
 
-import { runConversation, type ConversationStrategy } from "../../../src/conversation"
-import { fetchPricing } from "../../../src/pricing"
+import { runConversation, type ConversationStrategy } from "@/src/conversation"
+import { fetchPricing } from "@/src/pricing"
 import {
   formatGrandTotalRow,
   formatStepRow,
   formatTableHeader,
   formatTurnRow,
   type Pricing,
-} from "../../../src/stats"
+} from "@/src/stats"
 
 import { MODEL, USER_TURNS, freshSystemPrompt } from "./fixture"
 

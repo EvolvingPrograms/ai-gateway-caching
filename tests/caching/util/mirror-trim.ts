@@ -13,8 +13,8 @@
  * Pluggable into any strategy's `afterTurn` field.
  */
 
-import { dropOldestToolUses } from "../../../src/trim"
-import type { ConversationStrategy } from "../../../src/conversation"
+import { dropOldestToolUses } from "@/src/trim"
+import type { ConversationStrategy } from "@/src/conversation"
 import type { ToolSet } from "ai"
 
 

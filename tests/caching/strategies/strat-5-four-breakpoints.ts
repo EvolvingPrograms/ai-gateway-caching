@@ -10,9 +10,9 @@
 
 import { ToolLoopAgent } from "ai"
 
-import { makeCountingPrepareStep } from "../../../src/breakpoints"
-import type { ConversationStrategy } from "../../../src/conversation"
-import { testTools, type TestTools } from "../../../src/tools"
+import { makeCountingPrepareStep } from "@/src/breakpoints"
+import type { ConversationStrategy } from "@/src/conversation"
+import { testTools, type TestTools } from "@/src/tools"
 
 import {
   MODEL,
@@ -20,7 +20,7 @@ import {
   STOP_WHEN,
   ephemeralSystem,
   trailingEphemeral,
-} from "../util"
+} from "@/tests/caching/util"
 
 
 export function stratFourBreakpoints(

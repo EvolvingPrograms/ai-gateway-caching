@@ -27,16 +27,16 @@ import {
   type ModelMessage,
   type SystemModelMessage,
 } from "ai"
-import { withEphemeralCacheControl } from "../src/breakpoints"
+import { withEphemeralCacheControl } from "@/src/breakpoints"
 import {
   formatCacheTable,
   rowFromUsage,
   summarizeTurns,
   type StepRow,
   type TurnRecord,
-} from "../src/stats"
-import { fetchPricing } from "../src/pricing"
-import { verboseTools, type VerboseTools } from "../src/tools"
+} from "@/src/stats"
+import { fetchPricing } from "@/src/pricing"
+import { verboseTools, type VerboseTools } from "@/src/tools"
 
 const MODEL = "anthropic/claude-opus-4.7"
 

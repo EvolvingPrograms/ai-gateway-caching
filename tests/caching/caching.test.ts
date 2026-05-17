@@ -25,7 +25,7 @@
 import { describe, expect, test } from "bun:test"
 import type { ToolSet } from "ai"
 
-import type { ConversationStrategy, RunResult } from "../../src/conversation"
+import type { ConversationStrategy, RunResult } from "@/src/conversation"
 
 import {
   stratEightVerboseAllTechniques,

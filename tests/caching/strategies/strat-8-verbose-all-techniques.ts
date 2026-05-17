@@ -13,9 +13,9 @@ import type { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 import {
   makeCountingPrepareStep,
   pinTailBreakpoint,
-} from "../../../src/breakpoints"
-import type { ConversationStrategy } from "../../../src/conversation"
-import { testTools, type TestTools } from "../../../src/tools"
+} from "@/src/breakpoints"
+import type { ConversationStrategy } from "@/src/conversation"
+import { testTools, type TestTools } from "@/src/tools"
 
 import {
   CONTEXT_MANAGEMENT,
@@ -25,7 +25,7 @@ import {
   ephemeralSystem,
   mirrorTrim,
   trailingEphemeral,
-} from "../util"
+} from "@/tests/caching/util"
 
 
 export function stratEightVerboseAllTechniques(

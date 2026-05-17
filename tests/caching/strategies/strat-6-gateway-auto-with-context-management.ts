@@ -7,9 +7,9 @@
 import { ToolLoopAgent } from "ai"
 import type { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 
-import { makeCountingPrepareStep } from "../../../src/breakpoints"
-import type { ConversationStrategy } from "../../../src/conversation"
-import { testTools, type TestTools } from "../../../src/tools"
+import { makeCountingPrepareStep } from "@/src/breakpoints"
+import type { ConversationStrategy } from "@/src/conversation"
+import { testTools, type TestTools } from "@/src/tools"
 
 import {
   CONTEXT_MANAGEMENT,
@@ -17,7 +17,7 @@ import {
   REASONING_OPTIONS,
   STOP_WHEN,
   ephemeralSystem,
-} from "../util"
+} from "@/tests/caching/util"
 
 
 export function stratGatewayAutoWithContextManagement(

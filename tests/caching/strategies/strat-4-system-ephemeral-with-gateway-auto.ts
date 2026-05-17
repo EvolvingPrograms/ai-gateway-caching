@@ -7,11 +7,11 @@
 
 import { ToolLoopAgent } from "ai"
 
-import { makeCountingPrepareStep } from "../../../src/breakpoints"
-import type { ConversationStrategy } from "../../../src/conversation"
-import { testTools, type TestTools } from "../../../src/tools"
+import { makeCountingPrepareStep } from "@/src/breakpoints"
+import type { ConversationStrategy } from "@/src/conversation"
+import { testTools, type TestTools } from "@/src/tools"
 
-import { MODEL, REASONING_OPTIONS, STOP_WHEN, ephemeralSystem } from "../util"
+import { MODEL, REASONING_OPTIONS, STOP_WHEN, ephemeralSystem } from "@/tests/caching/util"
 
 
 export function stratSystemMessageEphemeralPlusGatewayAuto(

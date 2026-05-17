@@ -9,8 +9,8 @@
  * Pluggable into any strategy's `transform` field.
  */
 
-import { withEphemeralCacheControl } from "../../../src/breakpoints"
-import type { ConversationStrategy } from "../../../src/conversation"
+import { withEphemeralCacheControl } from "@/src/breakpoints"
+import type { ConversationStrategy } from "@/src/conversation"
 import type { ToolSet } from "ai"
 
 
