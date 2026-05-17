@@ -20,7 +20,6 @@ import {
   urlFor,
 } from "./fixture"
 
-
 // ---------------------------------------------------------------------------
 // Hit shape
 // ---------------------------------------------------------------------------
@@ -33,7 +32,6 @@ interface VerboseHit {
   excerpt: string
   publishedAt: string
 }
-
 
 function verboseHits(query: string, count: number): VerboseHit[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -49,7 +47,6 @@ function verboseHits(query: string, count: number): VerboseHit[] {
     publishedAt: `2026-${String(((i * 3) % 12) + 1).padStart(2, "0")}-${String(((i * 7) % 28) + 1).padStart(2, "0")}T08:00:00Z`,
   }))
 }
-
 
 // ---------------------------------------------------------------------------
 // Toolset
@@ -120,7 +117,6 @@ export const verboseTools = {
     },
   }),
 } satisfies ToolSet
-
 
 export type VerboseTools = typeof verboseTools
 

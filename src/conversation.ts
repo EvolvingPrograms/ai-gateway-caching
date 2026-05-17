@@ -31,7 +31,6 @@ import {
   type TurnRecord,
 } from "./stats"
 
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -61,12 +60,10 @@ export interface ConversationStrategy<TOOLS extends ToolSet> {
   lastBreakpointCount?: () => number
 }
 
-
 export interface RunResult {
   stats: ConversationCacheStats
   finalHistory: ModelMessage[]
 }
-
 
 // ---------------------------------------------------------------------------
 // Runner
@@ -138,7 +135,6 @@ export async function runConversation<TOOLS extends ToolSet>(args: {
   return { stats: summarizeTurns(turns), finalHistory: history }
 }
 
-
 // ---------------------------------------------------------------------------
 // Context-edit decoding
 // ---------------------------------------------------------------------------
@@ -146,7 +142,6 @@ export async function runConversation<TOOLS extends ToolSet>(args: {
 type AppliedEdit = NonNullable<
   AnthropicMessageMetadata["contextManagement"]
 >["appliedEdits"][number]
-
 
 /**
  * Pull a one-line description out of each Anthropic context-edit
@@ -161,11 +156,12 @@ type AppliedEdit = NonNullable<
 export function extractAppliedEdits(providerMetadata: unknown): string[] {
   const meta = readAnthropicMetadata(providerMetadata)
   const edits = meta?.contextManagement?.appliedEdits
-  if (!edits || edits.length === 0) return []
+  if (!edits || edits.length === 0) {
+    return []
+  }
 
   return edits.map(describeEdit)
 }
-
 
 function describeEdit(edit: AppliedEdit): string {
   switch (edit.type) {
@@ -188,7 +184,6 @@ function describeEdit(edit: AppliedEdit): string {
   }
 }
 
-
 /**
  * Read the `anthropic` block of an AI SDK step's `providerMetadata`,
  * typed as `AnthropicMessageMetadata`. The SDK stores
@@ -202,10 +197,14 @@ function readAnthropicMetadata(
   if (providerMetadata === null || typeof providerMetadata !== "object") {
     return undefined
   }
-  if (!("anthropic" in providerMetadata)) return undefined
+  if (!("anthropic" in providerMetadata)) {
+    return undefined
+  }
 
   const { anthropic } = providerMetadata
-  if (anthropic === null || typeof anthropic !== "object") return undefined
+  if (anthropic === null || typeof anthropic !== "object") {
+    return undefined
+  }
 
   return anthropic as AnthropicMessageMetadata
 }

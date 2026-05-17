@@ -25,28 +25,38 @@ export function dropOldestToolUses(
   history: readonly ModelMessage[],
   n: number,
 ): ModelMessage[] {
-  if (n <= 0) return [...history]
+  if (n <= 0) {
+    return [...history]
+  }
 
   // Find indices of assistant messages containing tool-call parts.
   const toolCallIndices: number[] = []
   for (let i = 0; i < history.length; i++) {
     const m = history[i]!
-    if (m.role !== "assistant") continue
-    if (!Array.isArray(m.content)) continue
+    if (m.role !== "assistant") {
+      continue
+    }
+    if (!Array.isArray(m.content)) {
+      continue
+    }
     if (m.content.some((p) => p.type === "tool-call")) {
       toolCallIndices.push(i)
     }
   }
 
   const toDrop = toolCallIndices.slice(0, n)
-  if (toDrop.length === 0) return [...history]
+  if (toDrop.length === 0) {
+    return [...history]
+  }
 
   // For each assistant tool-call message, also drop the immediately
   // following `tool` message (the tool-result).
   const dropSet = new Set<number>(toDrop)
   for (const idx of toDrop) {
     const next = history[idx + 1]
-    if (next && next.role === "tool") dropSet.add(idx + 1)
+    if (next && next.role === "tool") {
+      dropSet.add(idx + 1)
+    }
   }
 
   const out: ModelMessage[] = []

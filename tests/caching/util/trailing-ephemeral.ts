@@ -13,11 +13,9 @@ import { withEphemeralCacheControl } from "@/src/breakpoints"
 import type { ConversationStrategy } from "@/src/conversation"
 import type { ToolSet } from "ai"
 
-
 type Transform<TOOLS extends ToolSet> = NonNullable<
   ConversationStrategy<TOOLS>["transform"]
 >
-
 
 export function trailingEphemeral<TOOLS extends ToolSet>(
   count: number,

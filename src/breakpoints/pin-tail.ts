@@ -29,7 +29,9 @@ export function pinTailBreakpoint(args: {
   messages: ModelMessage[]
 }): { messages: ModelMessage[] } | undefined {
   const { messages } = args
-  if (messages.length === 0) return undefined
+  if (messages.length === 0) {
+    return undefined
+  }
   const lastIdx = messages.length - 1
   const tagged = messages.slice()
   tagged[lastIdx] = withEphemeralCacheControl(tagged[lastIdx]!)

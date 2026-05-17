@@ -19,7 +19,6 @@ import {
   ephemeralSystem,
 } from "@/tests/caching/util"
 
-
 export function stratGatewayAutoWithContextManagement(
   systemPrompt: string,
 ): ConversationStrategy<TestTools> {

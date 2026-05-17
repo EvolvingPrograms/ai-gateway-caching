@@ -3,7 +3,6 @@ import type { ModelMessage } from "ai"
 
 import { withEphemeralCacheControl } from "./ephemeral"
 
-
 describe("withEphemeralCacheControl", () => {
   test("system message: cache control applied at message level", () => {
     const msg: ModelMessage = { role: "system", content: "you are helpful." }
@@ -14,7 +13,6 @@ describe("withEphemeralCacheControl", () => {
       cacheControl: { type: "ephemeral" },
     })
   })
-
 
   test("system message: preserves any pre-existing providerOptions", () => {
     const msg: ModelMessage = {
@@ -30,12 +28,13 @@ describe("withEphemeralCacheControl", () => {
     })
   })
 
-
   test("user message with string content: lifted to a single text part with cache control", () => {
     const msg: ModelMessage = { role: "user", content: "hello" }
 
     const out = withEphemeralCacheControl(msg)
-    if (out.role !== "user") throw new Error("role drift")
+    if (out.role !== "user") {
+      throw new Error("role drift")
+    }
 
     const parts = out.content as Array<{
       type: string
@@ -51,7 +50,6 @@ describe("withEphemeralCacheControl", () => {
     })
   })
 
-
   test("user message with array content: cache control on the LAST part only", () => {
     const msg: ModelMessage = {
       role: "user",
@@ -62,7 +60,9 @@ describe("withEphemeralCacheControl", () => {
     }
 
     const out = withEphemeralCacheControl(msg)
-    if (out.role !== "user") throw new Error("role drift")
+    if (out.role !== "user") {
+      throw new Error("role drift")
+    }
 
     const parts = out.content as Array<{
       providerOptions?: { anthropic?: { cacheControl?: unknown } }
@@ -73,7 +73,6 @@ describe("withEphemeralCacheControl", () => {
       type: "ephemeral",
     })
   })
-
 
   test("assistant message with text and tool-call parts: cache control on the LAST part", () => {
     const msg: ModelMessage = {
@@ -90,7 +89,9 @@ describe("withEphemeralCacheControl", () => {
     }
 
     const out = withEphemeralCacheControl(msg)
-    if (out.role !== "assistant") throw new Error("role drift")
+    if (out.role !== "assistant") {
+      throw new Error("role drift")
+    }
 
     const parts = out.content as Array<{
       type: string
@@ -102,7 +103,6 @@ describe("withEphemeralCacheControl", () => {
       type: "ephemeral",
     })
   })
-
 
   test("tool message: cache control on its tool-result part", () => {
     const msg: ModelMessage = {
@@ -118,7 +118,9 @@ describe("withEphemeralCacheControl", () => {
     }
 
     const out = withEphemeralCacheControl(msg)
-    if (out.role !== "tool") throw new Error("role drift")
+    if (out.role !== "tool") {
+      throw new Error("role drift")
+    }
 
     const parts = out.content as Array<{
       providerOptions?: { anthropic?: { cacheControl?: unknown } }
@@ -128,7 +130,6 @@ describe("withEphemeralCacheControl", () => {
       type: "ephemeral",
     })
   })
-
 
   test("does not mutate the input message", () => {
     const original: ModelMessage = {
@@ -140,7 +141,6 @@ describe("withEphemeralCacheControl", () => {
     withEphemeralCacheControl(original)
     expect(original).toEqual(snapshot)
   })
-
 
   test("preserves pre-existing providerOptions on an array tail part", () => {
     const msg: ModelMessage = {
@@ -155,7 +155,9 @@ describe("withEphemeralCacheControl", () => {
     }
 
     const out = withEphemeralCacheControl(msg)
-    if (out.role !== "user") throw new Error("role drift")
+    if (out.role !== "user") {
+      throw new Error("role drift")
+    }
 
     const parts = out.content as Array<{
       providerOptions?: {

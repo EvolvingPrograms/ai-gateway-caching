@@ -18,7 +18,6 @@ import type {
   TurnRecord,
 } from "./types"
 
-
 // ---------------------------------------------------------------------------
 // Cost
 // ---------------------------------------------------------------------------
@@ -36,7 +35,6 @@ export function rowCost(row: CacheRow, pricing: Pricing): number {
     row.outputTokens * pricing.outputRate
   )
 }
-
 
 // ---------------------------------------------------------------------------
 // Row construction
@@ -67,7 +65,6 @@ export function rowFromUsage(
   }
 }
 
-
 // ---------------------------------------------------------------------------
 // Folds
 // ---------------------------------------------------------------------------
@@ -96,7 +93,6 @@ export function aggregateRows(rows: readonly CacheRow[]): CacheRow {
   acc.hitRate = acc.inputTokens > 0 ? acc.cacheReadTokens / acc.inputTokens : 0
   return acc
 }
-
 
 export function summarizeTurns(turns: TurnRecord[]): ConversationCacheStats {
   return { turns, total: aggregateRows(turns.map((t) => t.total)) }

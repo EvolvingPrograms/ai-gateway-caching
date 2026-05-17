@@ -5,12 +5,10 @@ import { withEphemeralCacheControl } from "./ephemeral"
 import { pinTailBreakpoint } from "./pin-tail"
 import { countBreakpoints, makeCountingPrepareStep } from "./count"
 
-
 describe("countBreakpoints", () => {
   test("returns 0 for an empty messages array", () => {
     expect(countBreakpoints([])).toBe(0)
   })
-
 
   test("counts a marker placed on a message itself (system style)", () => {
     const msgs: ModelMessage[] = [
@@ -20,7 +18,6 @@ describe("countBreakpoints", () => {
     expect(countBreakpoints(msgs)).toBe(1)
   })
 
-
   test("counts a marker placed on a content part", () => {
     const msgs: ModelMessage[] = [
       withEphemeralCacheControl({ role: "user", content: "hi" }),
@@ -28,7 +25,6 @@ describe("countBreakpoints", () => {
 
     expect(countBreakpoints(msgs)).toBe(1)
   })
-
 
   test("counts one marker per tagged part, not per message", () => {
     const msgs: ModelMessage[] = [
@@ -49,11 +45,9 @@ describe("countBreakpoints", () => {
     expect(countBreakpoints(msgs)).toBe(2)
   })
 
-
   test("systemHasEphemeral=true adds 1 even when messages have none", () => {
     expect(countBreakpoints([], true)).toBe(1)
   })
-
 
   test("ignores messages with no cache_control anywhere", () => {
     const msgs: ModelMessage[] = [
@@ -64,7 +58,6 @@ describe("countBreakpoints", () => {
     expect(countBreakpoints(msgs)).toBe(0)
   })
 })
-
 
 describe("makeCountingPrepareStep", () => {
   test("with no inner: counts only markers in the incoming messages", () => {
@@ -84,7 +77,6 @@ describe("makeCountingPrepareStep", () => {
     expect(lastCount()).toBe(2)
   })
 
-
   test("with inner=pinTailBreakpoint: counts the marker the inner placed", () => {
     const { prepareStep, lastCount } = makeCountingPrepareStep({
       inner: pinTailBreakpoint,
@@ -101,7 +93,6 @@ describe("makeCountingPrepareStep", () => {
     expect(result).toBeDefined()
     expect(lastCount()).toBe(1)
   })
-
 
   test("lastCount reflects the MOST RECENT call (not accumulated)", () => {
     const { prepareStep, lastCount } = makeCountingPrepareStep({

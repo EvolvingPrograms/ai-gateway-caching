@@ -12,10 +12,15 @@
  *     produced. Cache breakpoints live on the INPUT prefix, not the
  *     output, so we expect nothing here.
  *
- * Run: `bun --env-file=.env.local test lib/ai/gateway-caching/gateway-injection.test.ts`
+ * The outbound body is the Anthropic Messages API request schema —
+ * we type it via the upstream `@anthropic-ai/sdk` rather than
+ * hand-rolling a partial shape.
+ *
+ * Run: `bun --env-file=.env.local test tests/injection.test.ts`
  */
 
 import { describe, expect, test } from "bun:test"
+import type Anthropic from "@anthropic-ai/sdk"
 import { generateText, type ModelMessage } from "ai"
 
 const MODEL = "anthropic/claude-opus-4.7"
@@ -29,13 +34,28 @@ const LONG_SYSTEM = [
   ).join(" "),
 ].join("\n\n")
 
-type AnthropicLikeBody = {
-  system?: Array<{ cache_control?: unknown; type?: string; text?: string }> | string
-  messages?: Array<{
-    role: string
-    content?: Array<{ cache_control?: unknown; type?: string }> | string
-  }>
-  tools?: Array<{ cache_control?: unknown; name?: string }>
+// ---------------------------------------------------------------------------
+// Outbound body inspection
+// ---------------------------------------------------------------------------
+
+/**
+ * Outbound HTTP body the AI SDK + AI Gateway send to Anthropic. The
+ * SDK exposes `result.request.body` as `unknown`, so we narrow at
+ * this trust boundary to the upstream Anthropic type.
+ */
+type OutboundBody = Anthropic.Messages.MessageCreateParams
+
+interface CacheControlMarker {
+  location: string
+  block: unknown
+}
+
+function asOutboundBody(body: unknown): OutboundBody | undefined {
+  if (body === null || typeof body !== "object") {
+    return undefined
+  }
+
+  return body as OutboundBody
 }
 
 /**
@@ -43,45 +63,57 @@ type AnthropicLikeBody = {
  * `cache_control` marker we find. Returns a structured list so the
  * test can assert and the console can show what was injected.
  */
-function findCacheControlMarkers(body: unknown): Array<{
-  location: string
-  block: unknown
-}> {
-  const out: Array<{ location: string; block: unknown }> = []
-  const b = body as AnthropicLikeBody
-  // Tools
+function findCacheControlMarkers(body: unknown): CacheControlMarker[] {
+  const b = asOutboundBody(body)
+  if (!b) {
+    return []
+  }
+
+  const out: CacheControlMarker[] = []
+
   if (Array.isArray(b.tools)) {
     b.tools.forEach((t, i) => {
-      if (t.cache_control) out.push({ location: `tools[${i}]`, block: t })
-    })
-  }
-  // System (array of text blocks on the Anthropic API)
-  if (Array.isArray(b.system)) {
-    b.system.forEach((s, i) => {
-      if (s.cache_control)
-        out.push({ location: `system[${i}]`, block: s })
-    })
-  }
-  // Messages
-  if (Array.isArray(b.messages)) {
-    b.messages.forEach((m, i) => {
-      if (Array.isArray(m.content)) {
-        m.content.forEach((part, j) => {
-          if (part.cache_control)
-            out.push({
-              location: `messages[${i}].content[${j}]`,
-              block: part,
-            })
-        })
+      if ("cache_control" in t && t.cache_control) {
+        out.push({ location: `tools[${i}]`, block: t })
       }
     })
   }
+
+  if (Array.isArray(b.system)) {
+    b.system.forEach((s, i) => {
+      if ("cache_control" in s && s.cache_control) {
+        out.push({ location: `system[${i}]`, block: s })
+      }
+    })
+  }
+
+  if (Array.isArray(b.messages)) {
+    b.messages.forEach((m, i) => {
+      if (!Array.isArray(m.content)) {
+        return
+      }
+
+      m.content.forEach((part, j) => {
+        if ("cache_control" in part && part.cache_control) {
+          out.push({
+            location: `messages[${i}].content[${j}]`,
+            block: part,
+          })
+        }
+      })
+    })
+  }
+
   return out
 }
 
 const hasGatewayCreds = !!(
   process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
 )
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe("AI Gateway injection visibility", () => {
   test.skipIf(!hasGatewayCreds)(
@@ -101,7 +133,10 @@ describe("AI Gateway injection visibility", () => {
         "response.messages roles:",
         result.response.messages.map((m: ModelMessage) => m.role),
       )
-      console.log("providerMetadata keys:", Object.keys(result.providerMetadata ?? {}))
+      console.log(
+        "providerMetadata keys:",
+        Object.keys(result.providerMetadata ?? {}),
+      )
 
       expect(markers).toHaveLength(0)
     },
@@ -126,7 +161,10 @@ describe("AI Gateway injection visibility", () => {
         "response.messages roles:",
         result.response.messages.map((m: ModelMessage) => m.role),
       )
-      console.log("providerMetadata:", JSON.stringify(result.providerMetadata, null, 2))
+      console.log(
+        "providerMetadata:",
+        JSON.stringify(result.providerMetadata, null, 2),
+      )
 
       // Whatever the gateway added, it should show up here.
       expect(markers.length).toBeGreaterThanOrEqual(1)

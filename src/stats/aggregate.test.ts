@@ -4,7 +4,6 @@ import type { LanguageModelUsage } from "ai"
 import { aggregateRows, rowFromUsage, summarizeTurns } from "./aggregate"
 import type { CacheRow, TurnRecord } from "./types"
 
-
 function mockUsage(
   partial: Partial<{
     inputTokens: number
@@ -26,7 +25,6 @@ function mockUsage(
     totalTokens: undefined,
   } as unknown as LanguageModelUsage
 }
-
 
 describe("rowFromUsage", () => {
   test("extracts every cache field from a populated usage", () => {
@@ -51,7 +49,6 @@ describe("rowFromUsage", () => {
     })
   })
 
-
   test("coerces undefined fields to 0", () => {
     expect(rowFromUsage(mockUsage({}))).toEqual({
       inputTokens: 0,
@@ -64,7 +61,6 @@ describe("rowFromUsage", () => {
     })
   })
 
-
   test("hitRate is 0 when inputTokens is 0 (defensive)", () => {
     const row = rowFromUsage(
       mockUsage({ inputTokens: 0, cacheReadTokens: 50 }),
@@ -73,14 +69,12 @@ describe("rowFromUsage", () => {
     expect(row.hitRate).toBe(0)
   })
 
-
   test("records the supplied wall-clock seconds", () => {
     const row = rowFromUsage(mockUsage({ inputTokens: 100 }), 2.5)
 
     expect(row.seconds).toBe(2.5)
   })
 })
-
 
 describe("aggregateRows", () => {
   test("sums fields and recomputes hitRate from sums (not avg of ratios)", () => {
@@ -113,7 +107,6 @@ describe("aggregateRows", () => {
     expect(agg.hitRate).toBe(800 / 2100)
   })
 
-
   test("empty input returns an all-zeroes row", () => {
     expect(aggregateRows([])).toEqual({
       inputTokens: 0,
@@ -125,7 +118,6 @@ describe("aggregateRows", () => {
       seconds: 0,
     })
   })
-
 
   test("sums seconds across rows", () => {
     const rows: CacheRow[] = [
@@ -152,7 +144,6 @@ describe("aggregateRows", () => {
     expect(aggregateRows(rows).seconds).toBe(3.75)
   })
 })
-
 
 describe("summarizeTurns", () => {
   test("rolls turn totals up into a grand total", () => {

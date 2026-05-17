@@ -12,7 +12,6 @@ import { testTools, type TestTools } from "@/src/tools"
 
 import { MODEL, REASONING_OPTIONS, STOP_WHEN } from "@/tests/caching/util"
 
-
 export function stratStringNoOptIn(
   systemPrompt: string,
 ): ConversationStrategy<TestTools> {

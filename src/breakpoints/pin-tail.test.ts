@@ -3,12 +3,10 @@ import type { ModelMessage } from "ai"
 
 import { pinTailBreakpoint } from "./pin-tail"
 
-
 describe("pinTailBreakpoint", () => {
   test("returns undefined for empty messages (passes through to outer settings)", () => {
     expect(pinTailBreakpoint({ messages: [] })).toBeUndefined()
   })
-
 
   test("tags only the last message — earlier messages untouched", () => {
     const msgs: ModelMessage[] = [
@@ -18,7 +16,9 @@ describe("pinTailBreakpoint", () => {
     ]
 
     const out = pinTailBreakpoint({ messages: msgs })
-    if (!out) throw new Error("expected messages back")
+    if (!out) {
+      throw new Error("expected messages back")
+    }
 
     expect(out.messages).toHaveLength(3)
 
@@ -28,7 +28,9 @@ describe("pinTailBreakpoint", () => {
 
     // Last message has cache_control: ephemeral on its tail part.
     const last = out.messages[2]!
-    if (last.role !== "user") throw new Error("role drift")
+    if (last.role !== "user") {
+      throw new Error("role drift")
+    }
 
     const parts = last.content as Array<{
       providerOptions?: { anthropic?: { cacheControl?: unknown } }
@@ -38,7 +40,6 @@ describe("pinTailBreakpoint", () => {
       type: "ephemeral",
     })
   })
-
 
   test("does not mutate the input messages array", () => {
     const msgs: ModelMessage[] = [

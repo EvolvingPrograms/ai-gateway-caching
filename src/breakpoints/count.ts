@@ -13,7 +13,6 @@
 import type { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 import type { ModelMessage } from "ai"
 
-
 // ---------------------------------------------------------------------------
 // Breakpoint counter
 // ---------------------------------------------------------------------------
@@ -36,7 +35,9 @@ export function countBreakpoints(
   let count = systemHasEphemeral ? 1 : 0
 
   for (const m of messages) {
-    if (anthropicFrom(m.providerOptions)?.cacheControl) count++
+    if (anthropicFrom(m.providerOptions)?.cacheControl) {
+      count++
+    }
 
     if (Array.isArray(m.content)) {
       for (const part of m.content) {
@@ -48,14 +49,15 @@ export function countBreakpoints(
         ) {
           continue
         }
-        if (anthropicFrom(part.providerOptions)?.cacheControl) count++
+        if (anthropicFrom(part.providerOptions)?.cacheControl) {
+          count++
+        }
       }
     }
   }
 
   return count
 }
-
 
 /**
  * Read the Anthropic provider-options block out of any `providerOptions`

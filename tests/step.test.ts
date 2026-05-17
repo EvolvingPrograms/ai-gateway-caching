@@ -16,42 +16,63 @@
  * system prompt (modulo a fresh nonce per case so the cache starts
  * cold for each run). Outputs the per-step cache table for both.
  *
- * Run: `bun --env-file=.env.local test lib/ai/gateway-caching/per-step-breakpoint.test.ts`
+ * Run: `bun --env-file=.env.local test tests/step.test.ts`
  */
 
 import { describe, expect, test } from "bun:test"
 import {
   ToolLoopAgent,
   stepCountIs,
-  type LanguageModelUsage,
-  type ModelMessage,
+  type StepResult,
   type SystemModelMessage,
 } from "ai"
-import { withEphemeralCacheControl } from "@/src/breakpoints"
+import type { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
+
+import { pinTailBreakpoint } from "@/src/breakpoints"
+import { fetchPricing } from "@/src/pricing"
 import {
+  aggregateRows,
   formatCacheTable,
   rowFromUsage,
   summarizeTurns,
   type StepRow,
   type TurnRecord,
 } from "@/src/stats"
-import { fetchPricing } from "@/src/pricing"
 import { verboseTools, type VerboseTools } from "@/src/tools"
+
+// ---------------------------------------------------------------------------
+// Fixture
+// ---------------------------------------------------------------------------
 
 const MODEL = "anthropic/claude-opus-4.7"
 
+// A prompt that forces several search + fetch steps in one turn.
+const USER_PROMPT =
+  "Research 'cache invalidation', 'rate limiting', AND 'distributed locks'. For each, do one `search_knowledge_base` and one `fetch_document` on the top hit. Then give me a one-sentence synthesis."
+
+const STOP_WHEN = stepCountIs(10)
+
+const REASONING_OPTIONS: Pick<
+  AnthropicLanguageModelOptions,
+  "thinking" | "effort"
+> = {
+  thinking: { type: "adaptive" },
+  effort: "medium",
+}
+
 function freshSystemPrompt(): string {
   const nonce = crypto.randomUUID()
-  const LONG_KNOWLEDGE = Array.from(
+  const longKnowledge = Array.from(
     { length: 220 },
     (_, i) =>
       `Note ${i + 1}: padding paragraph to push the system prompt above the 1024-token cache floor. Synthetic content, no meaning.`,
   ).join("\n\n")
+
   return [
     `[run-nonce ${nonce}]`,
     "You are a curt research assistant. Use tools aggressively — search and fetch before answering.",
     "",
-    LONG_KNOWLEDGE,
+    longKnowledge,
   ].join("\n")
 }
 
@@ -65,20 +86,13 @@ function ephemeralSystem(systemPrompt: string): SystemModelMessage {
   }
 }
 
-// A prompt that forces several search + fetch steps in one turn.
-const USER_PROMPT =
-  "Research 'cache invalidation', 'rate limiting', AND 'distributed locks'. For each, do one `search_knowledge_base` and one `fetch_document` on the top hit. Then give me a one-sentence synthesis."
-
-const STOP_WHEN = stepCountIs(10)
-
-const REASONING_OPTIONS = {
-  thinking: { type: "adaptive" as const },
-  effort: "medium" as const,
-}
-
 // ---------------------------------------------------------------------------
-// Test scenarios
+// Harness
 // ---------------------------------------------------------------------------
+
+type PrepareStep = ConstructorParameters<
+  typeof ToolLoopAgent<never, VerboseTools>
+>[0]["prepareStep"]
 
 interface RunOutcome {
   label: string
@@ -86,50 +100,37 @@ interface RunOutcome {
 }
 
 /**
- * Run one turn with an agent built from the given prepareStep hook.
+ * Run one turn with an agent built from the given `prepareStep` hook.
  * Reports per-step cache stats and the conversation summary.
  */
 async function runOneTurn(
   label: string,
-  prepareStep:
-    | ((opts: {
-        stepNumber: number
-        messages: ModelMessage[]
-      }) => { messages?: ModelMessage[] } | undefined)
-    | undefined,
+  prepareStep: PrepareStep,
 ): Promise<RunOutcome> {
-  const systemPrompt = freshSystemPrompt()
   const agent = new ToolLoopAgent<never, VerboseTools>({
     model: MODEL,
-    instructions: ephemeralSystem(systemPrompt),
+    instructions: ephemeralSystem(freshSystemPrompt()),
     tools: verboseTools,
     stopWhen: STOP_WHEN,
     providerOptions: { anthropic: REASONING_OPTIONS },
-    // `prepareStep` runs before each internal generation; we use it
-    // to override `messages` with a copy whose tail has an ephemeral
-    // breakpoint.
     prepareStep,
   })
 
   const steps: StepRow[] = []
   console.log(`\n--- ${label} ---`)
+
   await agent.generate({
     messages: [{ role: "user", content: USER_PROMPT }],
-    onStepFinish: ({
-      stepNumber,
-      usage,
-    }: {
-      stepNumber: number
-      usage: LanguageModelUsage
-    }) => {
+    onStepFinish: (event: StepResult<VerboseTools>) => {
       const row: StepRow = {
         turn: 1,
-        step: stepNumber + 1,
-        ...rowFromUsage(usage),
+        step: event.stepNumber + 1,
+        ...rowFromUsage(event.usage),
         breakpoints: 0,
         appliedEdits: [],
       }
       steps.push(row)
+
       const pct = Math.round(row.hitRate * 100)
       console.log(
         `  step ${row.step}: input=${row.inputTokens} read=${row.cacheReadTokens} write=${row.cacheWriteTokens} noCache=${row.noCacheTokens} output=${row.outputTokens} hit=${pct}%`,
@@ -140,25 +141,22 @@ async function runOneTurn(
   const turn: TurnRecord = {
     turn: 1,
     steps,
-    total: {
-      inputTokens: steps.reduce((a, s) => a + s.inputTokens, 0),
-      noCacheTokens: steps.reduce((a, s) => a + s.noCacheTokens, 0),
-      cacheReadTokens: steps.reduce((a, s) => a + s.cacheReadTokens, 0),
-      cacheWriteTokens: steps.reduce((a, s) => a + s.cacheWriteTokens, 0),
-      outputTokens: steps.reduce((a, s) => a + s.outputTokens, 0),
-      hitRate: 0,
-        seconds: 0,
-    },
+    total: aggregateRows(steps),
   }
-  turn.total.hitRate =
-    turn.total.inputTokens > 0
-      ? turn.total.cacheReadTokens / turn.total.inputTokens
-      : 0
-
   const stats = summarizeTurns([turn])
-  const p = await fetchPricing(MODEL).catch(() => undefined)
-  console.log("\n" + formatCacheTable(label, stats, p))
+
+  const pricing = await fetchPricing(MODEL).catch(() => undefined)
+  console.log("\n" + formatCacheTable(label, stats, pricing))
+
   return { label, stats }
+}
+
+function firstStepOf(outcome: RunOutcome): StepRow | undefined {
+  return outcome.stats.turns[0]?.steps[0]
+}
+
+function laterStepsOf(outcome: RunOutcome): readonly StepRow[] {
+  return outcome.stats.turns[0]?.steps.slice(1) ?? []
 }
 
 // ---------------------------------------------------------------------------
@@ -174,8 +172,9 @@ describe("Per-step breakpoint placement", () => {
     "BASELINE: no per-step breakpoint — only system is cached, tool tail is uncached each step",
     async () => {
       const outcome = await runOneTurn("baseline (no prepareStep)", undefined)
+
       // Step 1 should be cold-ish (just system reads if anything).
-      expect(outcome.stats.turns[0]!.steps[0]!.cacheReadTokens).toBe(0)
+      expect(firstStepOf(outcome)?.cacheReadTokens).toBe(0)
     },
     { timeout: 300_000 },
   )
@@ -185,24 +184,21 @@ describe("Per-step breakpoint placement", () => {
     async () => {
       const outcome = await runOneTurn(
         "treatment (prepareStep pins last-msg breakpoint)",
-        ({ messages }) => {
-          if (messages.length === 0) return undefined
-          const lastIdx = messages.length - 1
-          const tagged = messages.slice()
-          tagged[lastIdx] = withEphemeralCacheControl(tagged[lastIdx]!)
-          return { messages: tagged }
-        },
+        pinTailBreakpoint,
       )
-      // Step 1 still cold, but later steps in the same turn should
-      // read what the previous step wrote.
-      expect(outcome.stats.turns[0]!.steps[0]!.cacheReadTokens).toBe(0)
-      const laterSteps = outcome.stats.turns[0]!.steps.slice(1)
-      // Each subsequent step's read should grow as the previous
-      // step's write becomes available.
+
+      // Step 1 still cold; later steps in the same turn should read
+      // what the previous step wrote.
+      expect(firstStepOf(outcome)?.cacheReadTokens).toBe(0)
+
+      const laterSteps = laterStepsOf(outcome)
       for (let i = 1; i < laterSteps.length; i++) {
-        expect(
-          laterSteps[i]!.cacheReadTokens,
-        ).toBeGreaterThanOrEqual(laterSteps[i - 1]!.cacheReadTokens)
+        const prev = laterSteps[i - 1]
+        const curr = laterSteps[i]
+        if (!prev || !curr) {
+          continue
+        }
+        expect(curr.cacheReadTokens).toBeGreaterThanOrEqual(prev.cacheReadTokens)
       }
     },
     { timeout: 300_000 },

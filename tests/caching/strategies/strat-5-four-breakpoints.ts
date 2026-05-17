@@ -22,7 +22,6 @@ import {
   trailingEphemeral,
 } from "@/tests/caching/util"
 
-
 export function stratFourBreakpoints(
   systemPrompt: string,
 ): ConversationStrategy<TestTools> {

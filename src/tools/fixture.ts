@@ -6,7 +6,6 @@
  * That keeps the cache-rate tests reproducible.
  */
 
-
 // ---------------------------------------------------------------------------
 // Lexicon
 // ---------------------------------------------------------------------------
@@ -29,7 +28,6 @@ export const KB_TITLES = [
   "Two-phase commit and its quieter alternatives",
   "Hot keys, cold tails, and the cost of fairness",
 ]
-
 
 export const PHRASES = [
   "The classic mistake is to evict on write rather than on read.",
@@ -54,9 +52,7 @@ export const PHRASES = [
   "Backfills are migrations that admit they are migrations.",
 ]
 
-
 export const AUTHORS = ["a.lin", "k.tanaka", "m.rivera", "s.okafor", "j.werner"]
-
 
 // ---------------------------------------------------------------------------
 // Deterministic accessors
@@ -68,7 +64,6 @@ export function hash(seed: string): number {
   return h
 }
 
-
 /**
  * Pick a value from a non-empty array using `i` modulo length.
  * Throws if `arr` is empty — but every array exported above is
@@ -77,17 +72,21 @@ export function hash(seed: string): number {
  * `T` (not `T | undefined`) without `!` non-null assertions.
  */
 function pick<T>(arr: readonly T[], i: number): T {
-  if (arr.length === 0) throw new Error("pick: empty array")
+  if (arr.length === 0) {
+    throw new Error("pick: empty array")
+  }
+
   const v = arr[Math.abs(i) % arr.length]
-  if (v === undefined) throw new Error("pick: unreachable")
+  if (v === undefined) {
+    throw new Error("pick: unreachable")
+  }
+  
   return v
 }
-
 
 export function phrase(seed: string, n: number): string {
   return pick(PHRASES, hash(seed) + n * 17)
 }
-
 
 /** Produce `paragraphs` paragraphs of 4 phrases each, seeded by `seed`. */
 export function bodyFor(seed: string, paragraphs: number): string {
@@ -96,27 +95,22 @@ export function bodyFor(seed: string, paragraphs: number): string {
   ).join("\n\n")
 }
 
-
 export function titleFor(seed: string): string {
   return pick(KB_TITLES, hash(seed))
 }
-
 
 export function urlFor(query: string, i: number): string {
   return `https://kb.example.com/doc/${(query.length * 7 + i) % 9999}`
 }
 
-
 export function authorFor(seed: string): string {
   return pick(AUTHORS, hash(seed))
 }
-
 
 /** Rotate through `KB_TITLES` by a positional index. */
 export function titleAt(i: number): string {
   return pick(KB_TITLES, i)
 }
-
 
 /** Rotate through `AUTHORS` by a positional index. */
 export function authorAt(i: number): string {

@@ -15,7 +15,6 @@ import { testTools, type TestTools } from "@/src/tools"
 
 import { MODEL, REASONING_OPTIONS, STOP_WHEN, ephemeralSystem } from "@/tests/caching/util"
 
-
 export function stratSystemMessageEphemeral(
   systemPrompt: string,
 ): ConversationStrategy<TestTools> {

@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test"
 
 import { extractAppliedEdits } from "./conversation"
 
-
 describe("extractAppliedEdits", () => {
   test("returns [] when providerMetadata is null / undefined / primitive", () => {
     expect(extractAppliedEdits(undefined)).toEqual([])
@@ -11,17 +10,14 @@ describe("extractAppliedEdits", () => {
     expect(extractAppliedEdits(42)).toEqual([])
   })
 
-
   test("returns [] when the anthropic block is missing", () => {
     expect(extractAppliedEdits({})).toEqual([])
     expect(extractAppliedEdits({ openai: {} })).toEqual([])
   })
 
-
   test("returns [] when contextManagement is absent", () => {
     expect(extractAppliedEdits({ anthropic: {} })).toEqual([])
   })
-
 
   test("returns [] when appliedEdits is empty", () => {
     expect(
@@ -30,7 +26,6 @@ describe("extractAppliedEdits", () => {
       }),
     ).toEqual([])
   })
-
 
   test("describes a clear_tool_uses edit", () => {
     const out = extractAppliedEdits({
@@ -50,7 +45,6 @@ describe("extractAppliedEdits", () => {
     expect(out).toEqual(["cleared 3 tool use(s); freed 4500 tokens"])
   })
 
-
   test("describes a clear_thinking edit", () => {
     const out = extractAppliedEdits({
       anthropic: {
@@ -69,7 +63,6 @@ describe("extractAppliedEdits", () => {
     expect(out).toEqual(["cleared 2 thinking turn(s); freed 1200 tokens"])
   })
 
-
   test("describes a compact edit", () => {
     const out = extractAppliedEdits({
       anthropic: {
@@ -81,7 +74,6 @@ describe("extractAppliedEdits", () => {
 
     expect(out).toEqual(["compaction applied"])
   })
-
 
   test("emits one line per edit when several apply on one step", () => {
     const out = extractAppliedEdits({

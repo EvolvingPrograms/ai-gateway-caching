@@ -20,9 +20,7 @@
 import { stepCountIs } from "ai"
 import type { AnthropicLanguageModelOptions } from "@ai-sdk/anthropic"
 
-
 export const STOP_WHEN = stepCountIs(12)
-
 
 export const REASONING_OPTIONS: Pick<
   AnthropicLanguageModelOptions,
@@ -31,7 +29,6 @@ export const REASONING_OPTIONS: Pick<
   thinking: { type: "adaptive" },
   effort: "medium",
 }
-
 
 export const CONTEXT_MANAGEMENT: AnthropicLanguageModelOptions["contextManagement"] = {
   edits: [

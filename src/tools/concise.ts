@@ -20,7 +20,6 @@ import {
   urlFor,
 } from "./fixture"
 
-
 // ---------------------------------------------------------------------------
 // Hit shape
 // ---------------------------------------------------------------------------
@@ -31,7 +30,6 @@ interface ConciseHit {
   url: string
 }
 
-
 function conciseHits(query: string, count: number): ConciseHit[] {
   return Array.from({ length: count }, (_, i) => ({
     rank: i + 1,
@@ -39,7 +37,6 @@ function conciseHits(query: string, count: number): ConciseHit[] {
     url: urlFor(query, i),
   }))
 }
-
 
 // ---------------------------------------------------------------------------
 // Toolset
@@ -95,6 +92,5 @@ export const conciseTools = {
     },
   }),
 } satisfies ToolSet
-
 
 export type ConciseTools = typeof conciseTools

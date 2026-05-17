@@ -10,7 +10,6 @@ import {
 } from "./format"
 import type { StepRow, TurnRecord } from "./types"
 
-
 function makeStep(overrides: Partial<StepRow>): StepRow {
   return {
     turn: 1,
@@ -27,7 +26,6 @@ function makeStep(overrides: Partial<StepRow>): StepRow {
     ...overrides,
   }
 }
-
 
 describe("formatCacheTable", () => {
   test("prints header, per-step rows, per-turn aggregate, and final TOT", () => {
@@ -71,7 +69,6 @@ describe("formatCacheTable", () => {
   })
 })
 
-
 describe("incremental formatters", () => {
   test("formatTableHeader emits column names", () => {
     const header = formatTableHeader()
@@ -82,7 +79,6 @@ describe("incremental formatters", () => {
     expect(header).toContain("sec")
   })
 
-
   test("formatStepRow with 0 breakpoints renders bp as '-'", () => {
     const row = formatStepRow(makeStep({ breakpoints: 0 }))
 
@@ -90,13 +86,11 @@ describe("incremental formatters", () => {
     expect(row).toMatch(/^\s+1\s+1\s+-/)
   })
 
-
   test("formatStepRow renders a non-zero breakpoint count", () => {
     const row = formatStepRow(makeStep({ breakpoints: 3 }))
 
     expect(row).toMatch(/^\s+1\s+1\s+3/)
   })
-
 
   test("formatTurnRow labels the turn 'T<n>' with step '-'", () => {
     const turn: TurnRecord = {
@@ -107,7 +101,6 @@ describe("incremental formatters", () => {
 
     expect(formatTurnRow(turn)).toMatch(/^\s+T2\s+-/)
   })
-
 
   test("formatGrandTotalRow labels the conversation 'TOT'", () => {
     const conv = summarizeTurns([])

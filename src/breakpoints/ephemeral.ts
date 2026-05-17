@@ -97,7 +97,9 @@ function tagUserContent(content: UserContent): UserContent {
       },
     ]
   }
-  if (content.length === 0) return content
+  if (content.length === 0) {
+    return content
+  }
   const next = content.slice()
   const lastIdx = next.length - 1
   const last = next[lastIdx]!
@@ -120,14 +122,18 @@ function tagAssistantContent(content: AssistantContent): AssistantContent {
       },
     ]
   }
-  if (content.length === 0) return content
+  if (content.length === 0) {
+    return content
+  }
   const next = content.slice()
   const lastIdx = next.length - 1
   const last = next[lastIdx]!
   // Approval parts don't expose `providerOptions`; leave content
   // alone if the tail happens to be one. (Won't happen in normal
   // tool-loop transcripts but the type union allows it.)
-  if (last.type === "tool-approval-request") return next
+  if (last.type === "tool-approval-request") {
+    return next
+  }
   next[lastIdx] = {
     ...last,
     providerOptions: mergeAnthropic(last.providerOptions),
@@ -136,11 +142,15 @@ function tagAssistantContent(content: AssistantContent): AssistantContent {
 }
 
 function tagToolContent(content: ToolContent): ToolContent {
-  if (content.length === 0) return content
+  if (content.length === 0) {
+    return content
+  }
   const next = content.slice()
   const lastIdx = next.length - 1
   const last = next[lastIdx]!
-  if (last.type === "tool-approval-response") return next
+  if (last.type === "tool-approval-response") {
+    return next
+  }
   next[lastIdx] = {
     ...last,
     providerOptions: mergeAnthropic(last.providerOptions),

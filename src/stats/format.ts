@@ -23,7 +23,6 @@ import type {
   TurnRecord,
 } from "./types"
 
-
 // ---------------------------------------------------------------------------
 // Column layout
 // ---------------------------------------------------------------------------
@@ -58,7 +57,6 @@ const WIDTHS: Record<HeaderCol, number> = {
   cost$: 10,
 }
 
-
 // ---------------------------------------------------------------------------
 // Cell rendering
 // ---------------------------------------------------------------------------
@@ -67,12 +65,12 @@ function pct(ratio: number): string {
   return `${Math.round(ratio * 100)}%`
 }
 
-
 function dollars(usd: number): string {
-  if (usd === 0) return "$0"
+  if (usd === 0) {
+    return "$0"
+  }
   return `$${usd.toFixed(4)}`
 }
-
 
 function cellsForRow(
   rowData: CacheRow & { turn: string; step: string; bp?: string },
@@ -93,7 +91,6 @@ function cellsForRow(
   }
 }
 
-
 function renderRow(
   cells: Record<HeaderCol, string>,
   header: readonly HeaderCol[],
@@ -101,11 +98,9 @@ function renderRow(
   return header.map((h) => cells[h].padStart(WIDTHS[h])).join("  ")
 }
 
-
 function headerCols(pricing?: Pricing): readonly HeaderCol[] {
   return pricing ? HEADER_WITH_COST : BASE_HEADER
 }
-
 
 // ---------------------------------------------------------------------------
 // Incremental formatters
@@ -118,7 +113,6 @@ export function formatTableHeader(pricing?: Pricing): string {
     header,
   )
 }
-
 
 export function formatStepRow(step: StepRow, pricing?: Pricing): string {
   const header = headerCols(pricing)
@@ -136,7 +130,6 @@ export function formatStepRow(step: StepRow, pricing?: Pricing): string {
   )
 }
 
-
 export function formatTurnRow(turn: TurnRecord, pricing?: Pricing): string {
   const header = headerCols(pricing)
   return renderRow(
@@ -144,7 +137,6 @@ export function formatTurnRow(turn: TurnRecord, pricing?: Pricing): string {
     header,
   )
 }
-
 
 export function formatGrandTotalRow(
   conv: ConversationCacheStats,
@@ -156,7 +148,6 @@ export function formatGrandTotalRow(
     header,
   )
 }
-
 
 // ---------------------------------------------------------------------------
 // Whole-run formatter

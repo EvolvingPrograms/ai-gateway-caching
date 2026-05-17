@@ -42,11 +42,9 @@ import {
 
 import { runStrategy } from "./util"
 
-
 const hasGatewayCreds = !!(
   process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
 )
-
 
 // ---------------------------------------------------------------------------
 // Shared assertions
@@ -65,11 +63,12 @@ function expectStandardCacheProgression<TOOLS extends ToolSet>(
 
   for (let i = 1; i < turns.length; i++) {
     const turn = turns[i]
-    if (!turn) continue
+    if (!turn) {
+      continue
+    }
     expect(turn.total.cacheReadTokens).toBeGreaterThan(0)
   }
 }
-
 
 /** Print every context-edit fired during the run, in T<x> S<y> order. */
 function logAppliedEdits(result: RunResult): void {
@@ -84,13 +83,11 @@ function logAppliedEdits(result: RunResult): void {
   for (const e of allEdits) console.log(`  ${e}`)
 }
 
-
 function logHitRate(result: RunResult): void {
   console.log(
     `\nOverall hit rate: ${Math.round(result.stats.total.hitRate * 100)}%`,
   )
 }
-
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -110,7 +107,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     { timeout: 600_000 },
   )
 
-
   test.skipIf(!hasGatewayCreds)(
     "strategy 2: instructions string, gateway caching:'auto'",
     async () => {
@@ -119,7 +115,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     },
     { timeout: 600_000 },
   )
-
 
   test.skipIf(!hasGatewayCreds)(
     "strategy 2b: gateway caching:'auto' + prepareStep ONLY (no other changes vs #2)",
@@ -133,7 +128,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     { timeout: 600_000 },
   )
 
-
   test.skipIf(!hasGatewayCreds)(
     "strategy 3: instructions: SystemModelMessage + manual ephemeral",
     async () => {
@@ -142,7 +136,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     },
     { timeout: 600_000 },
   )
-
 
   test.skipIf(!hasGatewayCreds)(
     "strategy 4: SystemModelMessage ephemeral + gateway caching:'auto'",
@@ -156,7 +149,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     { timeout: 600_000 },
   )
 
-
   test.skipIf(!hasGatewayCreds)(
     "strategy 5: system + last 3 history msgs ephemeral (4 breakpoints)",
     async () => {
@@ -165,7 +157,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     },
     { timeout: 600_000 },
   )
-
 
   test.skipIf(!hasGatewayCreds)(
     "strategy 6: gateway caching:'auto' + context management defaults",
@@ -180,7 +171,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     { timeout: 600_000 },
   )
 
-
   test.skipIf(!hasGatewayCreds)(
     "strategy 7: concise tools + breakpoint chain + gateway auto + context mgmt + mirror-trim",
     async () => {
@@ -192,7 +182,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     { timeout: 600_000 },
   )
 
-
   test.skipIf(!hasGatewayCreds)(
     "strategy 8: verbose tools + breakpoint chain + gateway auto + context mgmt + mirror-trim",
     async () => {
@@ -203,7 +192,6 @@ describe("AI Gateway caching: multi-turn ToolLoopAgent with Opus 4.7", () => {
     },
     { timeout: 600_000 },
   )
-
 
   test.skipIf(!hasGatewayCreds)(
     "strategy 9: verbose tools + manual 4-bp budget + context mgmt + mirror-trim, NO gateway auto",

@@ -27,7 +27,6 @@ import {
   trailingEphemeral,
 } from "@/tests/caching/util"
 
-
 export function stratEightVerboseAllTechniques(
   systemPrompt: string,
 ): ConversationStrategy<TestTools> {

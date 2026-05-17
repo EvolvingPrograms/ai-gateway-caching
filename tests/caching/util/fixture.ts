@@ -11,9 +11,7 @@
  *     drives through, so cross-strategy comparisons are apples-to-apples.
  */
 
-
 export const MODEL = "anthropic/claude-opus-4.7"
-
 
 // Pad the system to ~2.5k tokens so we're well above Anthropic's
 // 1024-token cache-eligibility floor.
@@ -22,7 +20,6 @@ const LONG_KNOWLEDGE = Array.from(
   (_, i) =>
     `Note ${i + 1}: This is a synthetic knowledge-base paragraph used purely to push the system prompt past the Anthropic prompt-cache minimum so the test can observe a real cache hit. The content is intentionally repetitive and content-free.`,
 ).join("\n\n")
-
 
 export function freshSystemPrompt(): string {
   const nonce = crypto.randomUUID()
@@ -37,7 +34,6 @@ export function freshSystemPrompt(): string {
     LONG_KNOWLEDGE,
   ].join("\n")
 }
-
 
 // Long, research-heavy conversation: each turn asks for several
 // fetches, so input grows past the `clear_tool_uses` trigger

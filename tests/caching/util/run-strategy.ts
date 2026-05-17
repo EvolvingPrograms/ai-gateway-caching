@@ -23,19 +23,18 @@ import {
 
 import { MODEL, USER_TURNS, freshSystemPrompt } from "./fixture"
 
-
 // ---------------------------------------------------------------------------
 // Pricing cache
 // ---------------------------------------------------------------------------
 
 let pricingCache: Pricing | undefined
 
-
 async function pricing(): Promise<Pricing> {
-  if (!pricingCache) pricingCache = await fetchPricing(MODEL)
+  if (!pricingCache) {
+    pricingCache = await fetchPricing(MODEL)
+  }
   return pricingCache
 }
-
 
 // ---------------------------------------------------------------------------
 // Harness

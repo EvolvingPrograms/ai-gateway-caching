@@ -9,7 +9,6 @@
  * without `!` non-null assertions or `as` casts.
  */
 
-
 type ToolExec<I, O> = {
   execute?: (input: I, opts: ExecOpts) => PromiseLike<O> | AsyncIterable<O> | O
 }
@@ -19,21 +18,22 @@ interface ExecOpts {
   messages: never[]
 }
 
-
 const EXEC_OPTS: ExecOpts = { toolCallId: "test", messages: [] }
 
-
 function isAsyncIterable<T>(v: unknown): v is AsyncIterable<T> {
-  if (v === null || typeof v !== "object") return false
+  if (v === null || typeof v !== "object") {
+    return false
+  }
   return Symbol.asyncIterator in v
 }
-
 
 export async function execToolTest<I, O>(
   toolDef: ToolExec<I, O>,
   input: I,
 ): Promise<O> {
-  if (!toolDef.execute) throw new Error("execToolTest: tool has no execute")
+  if (!toolDef.execute) {
+    throw new Error("execToolTest: tool has no execute")
+  }
 
   const result = await toolDef.execute(input, EXEC_OPTS)
   if (isAsyncIterable<O>(result)) {

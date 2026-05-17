@@ -8,7 +8,6 @@
 
 import type { SystemModelMessage } from "ai"
 
-
 export function ephemeralSystem(systemPrompt: string): SystemModelMessage {
   return {
     role: "system",

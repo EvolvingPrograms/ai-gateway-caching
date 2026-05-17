@@ -32,7 +32,6 @@ import {
   trailingEphemeral,
 } from "@/tests/caching/util"
 
-
 export function stratSevenAllTechniques(
   systemPrompt: string,
 ): ConversationStrategy<ConciseTools> {

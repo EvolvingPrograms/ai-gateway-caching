@@ -23,7 +23,6 @@
  *   - `seconds`          — wall-clock seconds for the call(s).
  */
 
-
 export interface CacheRow {
   inputTokens: number
   noCacheTokens: number
@@ -34,7 +33,6 @@ export interface CacheRow {
   /** Wall-clock seconds for the call(s) this row represents. */
   seconds: number
 }
-
 
 export interface StepRow extends CacheRow {
   turn: number
@@ -54,19 +52,16 @@ export interface StepRow extends CacheRow {
   appliedEdits: string[]
 }
 
-
 export interface TurnRecord {
   turn: number
   steps: StepRow[]
   total: CacheRow
 }
 
-
 export interface ConversationCacheStats {
   turns: TurnRecord[]
   total: CacheRow
 }
-
 
 /**
  * Per-token USD pricing for a model, mirrors the shape AI Gateway

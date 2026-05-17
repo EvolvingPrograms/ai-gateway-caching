@@ -17,11 +17,9 @@ import { dropOldestToolUses } from "@/src/trim"
 import type { ConversationStrategy } from "@/src/conversation"
 import type { ToolSet } from "ai"
 
-
 type MirrorTrim<TOOLS extends ToolSet> = NonNullable<
   ConversationStrategy<TOOLS>["afterTurn"]
 >
-
 
 export function mirrorTrim<TOOLS extends ToolSet>(): MirrorTrim<TOOLS> {
   return (history, turn) => {
@@ -29,11 +27,15 @@ export function mirrorTrim<TOOLS extends ToolSet>(): MirrorTrim<TOOLS> {
     for (const step of turn.steps) {
       for (const edit of step.appliedEdits) {
         const m = edit.match(/cleared (\d+) tool use/)
-        if (m && m[1]) newlyCleared += Number(m[1])
+        if (m && m[1]) {
+          newlyCleared += Number(m[1])
+        }
       }
     }
 
-    if (newlyCleared === 0) return history
+    if (newlyCleared === 0) {
+      return history
+    }
     return dropOldestToolUses(history, newlyCleared)
   }
 }
